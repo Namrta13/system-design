@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Life of a Request</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="../index.html">System Design Lab</a>
+  <a href="../index.html#modules">Modules</a>
+</div></header>
+
+<main class="wrap">
+  <p class="kicker" style="margin-top:40px">module 01 · Foundations</p>
+  <h1>Life of a <em>request</em></h1>
+  <p class="lead">You type an address and a page appears. Behind that one second, four things happen. Let's walk through them.</p>
+
+  <div class="analogy">
+    A request is a round trip. A name has to become an address before anything can be sent, and every hop on the way adds latency.
+  </div>
+
+  <div class="play">
+    <div class="stage" id="stage">
+      <div class="node" id="you" style="left:12%;top:50%"><span class="ico">Client</span>Browser</div>
+      <div class="node" id="dns" style="left:50%;top:18%"><span class="ico">Resolver</span>DNS</div>
+      <div class="node" id="srv" style="left:88%;top:50%"><span class="ico">Origin</span>App server</div>
+    </div>
+    <div class="steps" id="bar"><i></i><i></i><i></i><i></i></div>
+    <p class="say" id="say">Press <b>Next step</b> to type <code>shop.com</code> into your browser.</p>
+    <div class="controls">
+      <button class="btn" id="next">Next step</button>
+      <button class="btn ghost" id="reset">Start over</button>
+    </div>
+  </div>
+
+  <h2>The four steps, in words</h2>
+  <ol>
+    <li><b>Look up the address.</b> Computers find each other by number (an IP address), not by name. DNS is the contacts list that turns <code>shop.com</code> into a number.</li>
+    <li><b>Send the request.</b> Your browser posts a short note to that number: "please send me the home page".</li>
+    <li><b>The server does its work.</b> A server is just a computer that's always on, waiting for notes like yours. It gathers the page.</li>
+    <li><b>The reply comes back.</b> The page travels back and your browser draws it.</li>
+  </ol>
+
+  <div class="interview">
+    <strong>In a design review</strong> "The client resolves the domain through DNS, opens a connection to the server, sends an HTTP request, and the server returns a response." 
+  </div>
+
+  <div class="next">
+    <a href="../index.html">← modules</a>
+    <a class="btn" href="02-load-balancer.html">Next: 02 Load balancing →</a>
+  </div>
+</main>
+
+<script src="../assets/play.js"></script>
+<script>
+const you = document.getElementById("you"), dns = document.getElementById("dns"), srv = document.getElementById("srv");
+const say = document.getElementById("say"), next = document.getElementById("next");
+const bars = [...document.querySelectorAll("#bar i")];
+let step = 0;
+
+const steps = [
+  async () => {
+    say.innerHTML = "Your browser asks the <b>contacts list</b>: \"what's the number for shop.com?\"";
+    await sendDot(you, dns); flash(dns);
+    await sendDot(dns, you);
+    say.innerHTML = "It answers: <b>93.184.216.34</b>. Now we know where to send the letter.";
+  },
+  async () => {
+    say.innerHTML = "Your browser posts a note to that number: <b>\"please send me the home page\"</b>.";
+    await sendDot(you, srv, { ms: 1000 });
+  },
+  async () => {
+    srv.classList.add("lit");
+    say.innerHTML = "The <b>server</b> reads the note and gathers the page (text, pictures, prices).";
+    await wait(900);
+    srv.classList.remove("lit");
+  },
+  async () => {
+    say.innerHTML = "The reply travels back…";
+    await sendDot(srv, you, { ms: 1000, color: "var(--good)" });
+    flash(you, "lit", 1200);
+    say.innerHTML = "…and the page appears. All of that usually takes <b>under a second</b>.";
+  },
+];
+
+next.onclick = async () => {
+  if (step >= steps.length) return;
+  next.disabled = true;
+  bars[step].classList.add("on");
+  await steps[step++]();
+  next.disabled = step >= steps.length;
+  if (step >= steps.length) next.textContent = "Done";
+};
+document.getElementById("reset").onclick = () => {
+  step = 0; next.disabled = false; next.textContent = "Next step";
+  bars.forEach(b => b.classList.remove("on"));
+  say.innerHTML = "Press <b>Next step</b> to type <code>shop.com</code> into your browser.";
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caching</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="../index.html">System Design Lab</a>
+  <a href="../index.html#modules">Modules</a>
+</div></header>
+
+<main class="wrap">
+  <p class="kicker" style="margin-top:80px">Module 03 · Caching</p>
+  <h1>Caching. <em>Fast reads, honest trade-offs.</em></h1>
+  <p class="lead">A database read crosses the network and may touch disk. A cache keeps hot results in memory, so repeated reads skip the database entirely. The cost is that the copy can go out of date.</p>
+
+  <div class="analogy">
+    Memory is orders of magnitude faster than a database round trip. Most read traffic hits a small set of keys, so caching that set takes most of the load off the database.
+  </div>
+
+  <div class="play">
+    <div class="stage" id="stage">
+      <div class="node" id="app" style="left:12%;top:50%"><span class="ico">Service</span>App server</div>
+      <div class="node" id="cache" style="left:47%;top:50%"><span class="ico">Redis</span>Cache<div id="shelf" style="font:11px var(--mono);color:var(--muted);min-height:16px;margin-top:4px"></div></div>
+      <div class="node" id="db" style="left:86%;top:50%"><span class="ico">Postgres</span>Database</div>
+    </div>
+    <p style="margin:16px 0 6px;font-size:15px;color:var(--muted)">Read a key:</p>
+    <div class="controls" style="margin-top:0">
+      <button class="btn ghost sm ask" data-key="product:1">GET product:1</button>
+      <button class="btn ghost sm ask" data-key="product:2">GET product:2</button>
+      <button class="btn ghost sm ask" data-key="product:3">GET product:3</button>
+    </div>
+    <div class="stats" style="margin-top:24px">
+      <div><b id="hits">0</b>Cache hits</div>
+      <div><b id="misses">0</b>Cache misses</div>
+      <div><b id="ratio">–</b>Hit ratio</div>
+      <div><b id="time">–</b>Last latency</div>
+    </div>
+    <p class="say" id="say">Read <b>product:1</b>. The cache is cold, so the first read goes to the database.</p>
+    <div class="controls">
+      <button class="btn ghost sm" id="change">Write new price for product:1</button>
+      <button class="btn ghost sm" id="clear">Flush cache</button>
+    </div>
+  </div>
+
+  <h2>Stale reads</h2>
+  <p>Write a new price for <code>product:1</code>, then read it again. The cache still returns the old value, because nothing told it the database changed.</p>
+  <p>Two standard controls: give every entry a <b>TTL</b> so stale data has a maximum age, and <b>invalidate</b> (delete) the key on every write so the next read refetches it.</p>
+
+  <div class="interview">
+    <strong>In a design review</strong>
+    "The workload is read-heavy, so I'll put Redis in front of the database using cache-aside: read from cache, fall back to the database on a miss, then populate the cache. Entries get a TTL, and writes invalidate the key to bound staleness."
+  </div>
+
+  <div class="next">
+    <a href="02-load-balancer.html">← 02 Load balancing</a>
+    <a class="btn" href="../index.html#modules">All modules</a>
+  </div>
+</main>
+
+<script src="../assets/play.js"></script>
+<script>
+const app = document.getElementById("app"), cache = document.getElementById("cache"), db = document.getElementById("db");
+const say = document.getElementById("say"), shelf = document.getElementById("shelf");
+const prices = { "product:1": 80, "product:2": 120, "product:3": 200 };
+const cached = {};
+let hits = 0, misses = 0, busy = false;
+
+function show() {
+  shelf.textContent = Object.keys(cached).map(k => k.split(":")[1]).join(" · ") || "empty";
+  document.getElementById("hits").textContent = hits;
+  document.getElementById("misses").textContent = misses;
+  document.getElementById("ratio").textContent = hits + misses ? Math.round(100 * hits / (hits + misses)) + "%" : "–";
+}
+
+// Latencies shown are representative, not the animation's duration.
+async function read(key) {
+  if (busy) return; busy = true;
+  await sendDot(app, cache, { ms: 300 });
+  let ms;
+  if (key in cached) {
+    hits++; flash(cache, "lit", 600); ms = 1;
+    await sendDot(cache, app, { ms: 300, color: "var(--good)" });
+    say.innerHTML = `<b>HIT</b> ${key} = $${cached[key]} from memory.` +
+      (cached[key] !== prices[key] ? ` The database holds <b>$${prices[key]}</b>: this is a <b>stale read</b>.` : "");
+  } else {
+    misses++; ms = 45;
+    say.innerHTML = `<b>MISS</b> ${key}. Querying the database…`;
+    await sendDot(cache, db, { ms: 900 });
+    flash(db, "lit", 600); await wait(500);
+    await sendDot(db, cache, { ms: 900 });
+    cached[key] = prices[key];
+    await sendDot(cache, app, { ms: 300, color: "var(--good)" });
+    say.innerHTML = `<b>MISS</b> ${key} = $${prices[key]} from the database, now cached. Read it again and compare latency.`;
+  }
+  document.getElementById("time").textContent = ms + " ms";
+  show(); busy = false;
+}
+
+document.querySelectorAll(".ask").forEach(b => b.onclick = () => read(b.dataset.key));
+document.getElementById("change").onclick = () => {
+  prices["product:1"] += 15;
+  say.innerHTML = `Database updated: product:1 = <b>$${prices["product:1"]}</b>. The cache was not invalidated. Read product:1.`;
+};
+document.getElementById("clear").onclick = () => {
+  for (const k in cached) delete cached[k];
+  show(); say.innerHTML = "Cache flushed. Every next read is a <b>miss</b>.";
+};
+show();
+</script>
+</body>
+</html>

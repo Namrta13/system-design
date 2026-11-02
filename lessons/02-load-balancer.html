@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Load Balancer</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="../index.html">System Design Lab</a>
+  <a href="../index.html#modules">Modules</a>
+</div></header>
+
+<main class="wrap">
+  <p class="kicker" style="margin-top:40px">module 02 · Scaling</p>
+  <h1>Load balancer: <em>sharing the work</em></h1>
+  <p class="lead">One server can only serve so many people at once. When too many show up, it slows down and falls over. The fix is more servers, plus someone to share the visitors out.</p>
+
+  <div class="analogy">
+    Capacity per node is fixed. Past it, queues grow and requests fail. Adding nodes only helps if something distributes traffic across them and stops sending to nodes that are down.
+  </div>
+
+  <div class="play">
+    <div class="stage" id="stage" style="min-height:260px">
+      <div class="node" id="users" style="left:10%;top:50%"><span class="ico">Traffic</span>Clients</div>
+      <div class="node" id="lb" style="left:42%;top:50%"><span class="ico">L7</span>Load balancer</div>
+      <div class="node srv" style="left:84%;top:16%"><span class="ico">Node A</span>App server<div class="meter"><i></i></div></div>
+      <div class="node srv" style="left:84%;top:50%"><span class="ico">Node B</span>App server<div class="meter"><i></i></div></div>
+      <div class="node srv" style="left:84%;top:84%"><span class="ico">Node C</span>App server<div class="meter"><i></i></div></div>
+    </div>
+    <div class="controls">
+      <label>Requests per second: <b id="rateOut">2</b><br>
+        <input type="range" id="rate" min="1" max="12" value="2"></label>
+      <label><input type="checkbox" id="multi"> Scale out to 3 nodes</label>
+    </div>
+    <div class="stats" style="margin-top:12px">
+      <div><b id="served">0</b>served</div>
+      <div><b id="dropped">0</b>dropped</div>
+    </div>
+    <p class="say" id="say">Drag the slider up and see how one server copes.</p>
+  </div>
+
+  <h2>What just happened</h2>
+  <p>With one server, every visitor goes to the same place. Past about 4 a second, its bar goes red and visitors get turned away (in real life: slow pages or errors).</p>
+  <p>Add two more servers and the host takes turns: A, B, C, A, B, C. This is called <b>round robin</b>. Each server now gets a third of the visitors, so all three stay green.</p>
+  <p>A bonus: if one server breaks, the host just stops sending people to it. Visitors never notice.</p>
+
+  <div class="interview">
+    <strong>In a design review</strong> "I'll put a load balancer in front of several stateless app servers so we can scale horizontally. It uses round robin or least-connections, and health checks remove failed servers."
+  </div>
+
+  <div class="next">
+    <a href="01-opening-a-website.html">← 01 Life of a request</a>
+    <a class="btn" href="03-cache.html">Next: 03 Caching →</a>
+  </div>
+</main>
+
+<script src="../assets/play.js"></script>
+<script>
+const users = document.getElementById("users"), lb = document.getElementById("lb");
+const servers = [...document.querySelectorAll(".srv")];
+const rate = document.getElementById("rate"), multi = document.getElementById("multi");
+const say = document.getElementById("say");
+const CAPACITY = 4; // visitors per second one server can handle
+const load = [0, 0, 0];
+let served = 0, dropped = 0, turn = 0;
+
+function active() { return multi.checked ? servers : [servers[0]]; }
+
+function paint() {
+  servers.forEach((s, i) => {
+    const on = active().includes(s);
+    s.style.opacity = on ? 1 : .3;
+    const pct = Math.min(100, (load[i] / CAPACITY) * 100);
+    const bar = s.querySelector(".meter i");
+    bar.style.width = pct + "%";
+    bar.style.background = pct >= 100 ? "var(--bad)" : pct > 70 ? "var(--warn)" : "var(--good)";
+    s.classList.toggle("hot", pct >= 100);
+  });
+  document.getElementById("served").textContent = served;
+  document.getElementById("dropped").textContent = dropped;
+  const perServer = rate.value / active().length;
+  say.innerHTML = perServer > CAPACITY
+    ? `Each server is getting <b>${perServer.toFixed(1)}</b> req/s but can only handle <b>${CAPACITY}</b>. Requests are being dropped.`
+    : `Each server is getting <b>${perServer.toFixed(1)}</b> req/s. Within capacity.`;
+}
+
+async function visitor() {
+  const pool = active();
+  const s = pool[turn++ % pool.length];
+  const i = servers.indexOf(s);
+  await sendDot(users, lb, { ms: 400 });
+  if (load[i] >= CAPACITY) {
+    dropped++; flash(s, "hot", 300); paint(); return;
+  }
+  load[i]++; paint();
+  await sendDot(lb, s, { ms: 400 });
+  await wait(1000); // time to serve
+  load[i]--; served++; paint();
+}
+
+let timer;
+function start() {
+  clearInterval(timer);
+  document.getElementById("rateOut").textContent = rate.value;
+  timer = setInterval(visitor, 1000 / rate.value);
+  paint();
+}
+rate.oninput = start;
+multi.onchange = () => { turn = 0; start(); };
+start();
+</script>
+</body>
+</html>

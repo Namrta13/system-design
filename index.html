@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Design Lab</title>
+<meta name="description" content="Learn system design by running small systems in your browser.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="logo" href="index.html">System Design Lab</a>
+  <a href="#modules">Modules</a>
+</div></header>
+
+<main>
+  <section class="hero wrap">
+    <p class="kicker">For engineers who build things</p>
+    <h1>Architecture you can<br><em>see running.</em></h1>
+    <p class="lead">Interactive models of real systems. Push traffic, take servers down, warm caches, and watch latency and throughput respond, then learn how to defend the design.</p>
+    <div class="cta">
+      <a class="btn" href="lessons/01-opening-a-website.html">Start the first module</a>
+      <a class="btn ghost" href="#modules">See all modules</a>
+    </div>
+    <div class="figures">
+      <div><b>Live</b><span>Simulations, not diagrams</span></div>
+      <div><b>0 setup</b><span>Runs in your browser</span></div>
+      <div><b>Interview-ready</b><span>Every module ends with the vocabulary</span></div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <h2 id="modules">Modules.<br><span class="soon">Each one builds on the last.</span></h2>
+      <div class="modules">
+        <a class="mod" href="lessons/01-opening-a-website.html">
+          <span class="id">01 · Foundations</span>
+          <h3>Life of a request</h3>
+          <p>DNS resolution, the request, server work and the response, one step at a time.</p>
+          <span class="chip">Open module</span>
+        </a>
+        <a class="mod" href="concepts/load-balancer.html">
+          <span class="id">02 · Scaling</span>
+          <h3>Load balancing</h3>
+          <p>Saturate a single node, then scale horizontally behind a round-robin balancer.</p>
+          <span class="chip">Open module</span>
+        </a>
+        <a class="mod" href="lessons/03-cache.html">
+          <span class="id">03 · Caching</span>
+          <h3>Caching</h3>
+          <p>Cache-aside reads, hit ratio, latency, and the staleness you trade for them.</p>
+          <span class="chip">Open module</span>
+        </a>
+        <div class="mod locked"><span class="id">04 · Data</span><h3>Replication &amp; sharding</h3><p>Read replicas, replication lag and partitioning.</p><span class="chip">Coming soon</span></div>
+        <div class="mod locked"><span class="id">05 · Async</span><h3>Message queues</h3><p>Absorb bursts, retry safely, stay idempotent.</p><span class="chip">Coming soon</span></div>
+        <div class="mod locked"><span class="id">06 · Case study</span><h3>Design a URL shortener</h3><p>Everything together, end to end.</p><span class="chip">Coming soon</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">System Design Lab</div></footer>
+</body>
+</html>
