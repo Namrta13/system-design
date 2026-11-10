@@ -11,7 +11,7 @@ One concept per page, built around the visualization and played as a game:
 - Hearts, an XP bar and words you unlock along the way
 - An "In a design review" box with the vocabulary engineers use
 
-`concepts/load-balancer.html` is the reference implementation of this format.
+`src/concepts/load-balancer/` is the reference implementation of this format.
 
 ## Status
 
@@ -22,21 +22,31 @@ One concept per page, built around the visualization and played as a game:
 | Caching | Older lesson format, to be converted |
 | Replication & sharding, message queues, URL shortener | Planned |
 
+## Stack
+
+- **Vite + React + TypeScript**, built as a multi-page site so URLs stay the same on GitHub Pages
+- **React Flow** (`@xyflow/react`) for the live system diagram
+- **shadcn/ui-style components** (Radix + Tailwind CSS v4) in `src/components/ui`
+- **Motion** for requests moving between components
+
 ## Run locally
 
-It's a static site with no build step and no dependencies:
-
 ```bash
-python3 -m http.server 8420
+npm install
+npm run dev
 ```
 
-Then open http://localhost:8420.
+Then open http://localhost:5173/system-design/.
+
+`npm run build` writes the site to `dist/`. A GitHub Actions workflow (`.github/workflows/pages.yml`) builds and deploys it on every push to `main`.
 
 ## Structure
 
 ```
-index.html            Homepage and module list
-assets/style.css      Shared styles (light and dark)
-concepts/             One page per concept, the current format
-lessons/, assets/play.js   Older lesson format, being phased out
+index.html, src/home/              Homepage and module list
+concepts/load-balancer.html        Entry for the load balancer concept
+src/concepts/load-balancer/        Page, diagram and node components
+src/sim/load-balancer.ts           Simulation and level rules (no React)
+src/components/ui/                 Shared UI components
+public/lessons/, public/assets/    Older lesson format, being phased out
 ```
